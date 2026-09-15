@@ -1,0 +1,12 @@
+{
+  "name": "mandaadi-race",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mandaadi Race - a Tamil Nadu coastal catamaran rhythm-rowing time trial (Three.js, single index.html). Playwright is used only by the verify.js test harness.",
+  "scripts": {
+    "test": "node verify.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.50.0"
+  }
+}

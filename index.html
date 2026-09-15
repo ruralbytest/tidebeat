@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Mandaadi Race</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b3b4a; font-family: "Trebuchet MS", "Segoe UI", sans-serif; color: #fff8ec; }
+  #c { display: block; width: 100%; height: 100%; touch-action: none; }
+  [hidden] { display: none !important; }
+  .panel { position: absolute; background: rgba(12, 32, 40, 0.62); border: 1px solid rgba(255, 220, 160, 0.25); border-radius: 10px; padding: 10px 14px; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+  #hud-tl { top: 14px; left: 14px; }
+  #hud-tr { top: 14px; right: 14px; text-align: right; }
+  #hud-bl { bottom: 18px; left: 14px; min-width: 220px; }
+  #hud-bc { bottom: 14px; left: 50%; transform: translateX(-50%); text-align: center; background: none; border: none; }
+  .big { font-size: 30px; font-weight: bold; letter-spacing: 1px; line-height: 1.1; }
+  .small { font-size: 13px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+  #pen { color: #ffd0b0; }
+  #pen.hot { color: #ff5a3c; }
+  #windrow { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+  #windarrow { width: 34px; height: 34px; transition: transform 0.4s ease; }
+  #sailstat { font-size: 13px; margin-top: 4px; letter-spacing: 1px; }
+  #sailstat.good { color: #7dffb0; }
+  #sailstat.bad { color: #ffb08a; }
+  #stam { width: 220px; height: 16px; background: rgba(0,0,0,0.5); border-radius: 8px; overflow: hidden; margin-top: 6px; border: 1px solid rgba(255,255,255,0.25); }
+  #stamfill { height: 100%; width: 100%; background: linear-gradient(90deg, #35d67a, #b7ff5a); transition: width 0.1s linear; }
+  #stamfill.tired { background: linear-gradient(90deg, #ff4a3c, #ff9a3c); }
+  #beat { position: relative; width: 120px; height: 120px; margin: 0 auto; }
+  .ring { position: absolute; left: 50%; top: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; box-sizing: border-box; }
+  #ring-target { border: 4px solid rgba(255, 240, 200, 0.9); box-shadow: 0 0 12px rgba(255, 200, 120, 0.5); }
+  #ring-target.pulse { border-color: #fff; box-shadow: 0 0 22px rgba(255, 220, 140, 0.9); }
+  #ring-move { border: 3px solid #ff9a3c; }
+  #mult { font-size: 34px; font-weight: bold; color: #ffd23a; text-shadow: 0 0 10px rgba(255, 180, 40, 0.6); margin-top: -4px; }
+  #judge { height: 22px; font-size: 18px; font-weight: bold; letter-spacing: 2px; }
+  #judge.perfect { color: #7dffb0; } #judge.good { color: #ffd23a; } #judge.miss { color: #ff6a5a; }
+  #mutebtn { position: absolute; top: 14px; right: 14px; z-index: 5; background: rgba(12, 32, 40, 0.7); color: #fff8ec; border: 1px solid rgba(255,220,160,0.4); border-radius: 8px; font-size: 18px; width: 42px; height: 38px; cursor: pointer; }
+  #hud-tr { top: 60px; }
+  #flash { position: absolute; inset: 0; background: rgba(255, 40, 20, 0); pointer-events: none; transition: background 0.5s ease; }
+  #flash.on { background: rgba(255, 40, 20, 0.35); transition: none; }
+  #flashmsg { position: absolute; top: 28%; left: 50%; transform: translateX(-50%); font-size: 34px; font-weight: bold; color: #ff6a4a; text-shadow: 0 0 14px rgba(0,0,0,0.7); letter-spacing: 2px; pointer-events: none; }
+  .overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 16px; }
+  #menu { background: linear-gradient(180deg, rgba(20, 30, 50, 0.55), rgba(5, 25, 35, 0.75)); }
+  #menu h1 { font-size: clamp(38px, 8vw, 78px); margin: 0 0 6px; letter-spacing: 3px; color: #ffd23a; text-shadow: 0 4px 0 #b3411f, 0 8px 24px rgba(0,0,0,0.6); }
+  #menu .tagline { font-size: 18px; margin: 0 0 22px; color: #ffe9c8; }
+  .controls { font-size: 15px; color: #ffe9c8; background: rgba(0,0,0,0.35); padding: 8px 14px; border-radius: 8px; margin-bottom: 26px; }
+  .btn { font-size: 22px; font-weight: bold; padding: 14px 40px; border-radius: 999px; border: none; background: #ff7a1a; color: #1a0d05; cursor: pointer; box-shadow: 0 6px 0 #b3411f, 0 10px 20px rgba(0,0,0,0.4); letter-spacing: 1px; }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #b3411f; }
+  #countdown { pointer-events: none; }
+  #count { font-size: clamp(90px, 22vw, 200px); font-weight: bold; color: #ffd23a; text-shadow: 0 6px 0 #b3411f, 0 12px 30px rgba(0,0,0,0.6); }
+  #results { background: rgba(5, 25, 35, 0.6); }
+  #rescard { background: rgba(12, 32, 40, 0.9); border: 2px solid #ffb35a; border-radius: 16px; padding: 24px 40px; min-width: 260px; }
+  #rescard h2 { margin: 0 0 8px; font-size: 40px; color: #ffd23a; letter-spacing: 2px; }
+  #res-stars { font-size: 44px; color: #ffd23a; letter-spacing: 6px; margin-bottom: 8px; }
+  #res-time { font-size: 36px; font-weight: bold; }
+  .resline { font-size: 17px; margin: 4px 0; color: #ffe9c8; }
+  #again { margin-top: 18px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<button id="mutebtn" title="Mute">&#128266;</button>
+
+<div id="hud" hidden>
+  <div id="hud-tl" class="panel">
+    <div id="time" class="big">0:00.00</div>
+    <div id="dist" class="small">1200 m to finish</div>
+    <div id="pen" class="small">Penalties: 0</div>
+  </div>
+  <div id="hud-tr" class="panel">
+    <div id="speed" class="big">0.0</div>
+    <div class="small">speed</div>
+    <div id="windrow">
+      <span class="small">wind</span>
+      <svg id="windarrow" viewBox="0 0 40 40"><path d="M20 3 L32 22 L24 22 L24 37 L16 37 L16 22 L8 22 Z" fill="#7de3ff" stroke="#053a4a" stroke-width="1.5"/></svg>
+    </div>
+    <div id="sailstat">SAIL 0&deg;</div>
+  </div>
+  <div id="hud-bl" class="panel">
+    <div class="small">crew stamina</div>
+    <div id="stam"><div id="stamfill"></div></div>
+  </div>
+  <div id="hud-bc" class="panel">
+    <div id="beat"><div id="ring-target" class="ring"></div><div id="ring-move" class="ring"></div></div>
+    <div id="mult">1x</div>
+    <div id="judge"></div>
+  </div>
+</div>
+<div id="flash"></div>
+<div id="flashmsg" hidden>MISSED GATE +3s</div>
+
+<div id="menu" class="overlay">
+  <h1>Mandaadi Race</h1>
+  <p class="tagline">Captain the festival catamaran. Row on the drum, trim the sail, thread the buoys.</p>
+  <div class="controls">SPACE / tap = row on the beat &nbsp;&middot;&nbsp; &larr; &rarr; or A D = steer &nbsp;&middot;&nbsp; &uarr; &darr; or W S = trim sail</div>
+  <button id="start" class="btn">Start Race</button>
+</div>
+<div id="countdown" class="overlay" hidden><div id="count">3</div></div>
+<div id="results" class="overlay" hidden>
+  <div id="rescard">
+    <h2>Finish!</h2>
+    <div id="res-stars"></div>
+    <div id="res-time"></div>
+    <div id="res-gates" class="resline"></div>
+    <div id="res-pen" class="resline"></div>
+    <button id="again" class="btn">Race Again</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   CONFIG / UTILS
+   ===================================================================== */
+const COURSE_LENGTH = 1200;
+const GATE_SPACING = 150;
+const GATE_HALF_WIDTH = 12;
+const FINISH_HALF_WIDTH = 16;
+const STEP = 1 / 60;               // fixed physics timestep (seconds)
+const BEAT_INTERVAL = 0.5;         // 120 BPM
+const PERFECT_WINDOW = 0.12;
+const GOOD_WINDOW = 0.25;
+const MAX_MULT = 5;
+const GATE_PENALTY = 3;
+const COUNTDOWN_SECONDS = 3;
+const SAIL_LIMIT = 80 * Math.PI / 180;
+const SAIL_TRIM_RATE = 60 * Math.PI / 180;
+
+// Two summed sine waves. Shared by the water shader (GLSL) and the JS
+// sampler so the visible water and the boat motion agree exactly.
+const WAVES = [
+  { amp: 0.6,  freq: 0.08, dx: 0.8,  dz: 0.6,  speed: 1.1 },
+  { amp: 0.35, freq: 0.17, dx: -0.5, dz: 0.85, speed: 1.7 },
+];
+function waveHeight(x, z, t) {
+  let h = 0;
+  for (let i = 0; i < WAVES.length; i++) {
+    const w = WAVES[i];
+    h += w.amp * Math.sin((w.dx * x + w.dz * z) * w.freq + t * w.speed);
+  }
+  return h;
+}
+const f4 = (n) => n.toFixed(4);
+const WAVE_GLSL = 'float waveHeight(vec2 p, float t) { return ' +
+  WAVES.map(w => f4(w.amp) + ' * sin(dot(vec2(' + f4(w.dx) + ', ' + f4(w.dz) + '), p) * ' + f4(w.freq) + ' + t * ' + f4(w.speed) + ')').join(' + ') +
+  '; }\n';
+
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+function wrapAngle(a) { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; }
+const $ = (id) => document.getElementById(id);
+
+// Small seeded PRNG (LCG) so wind shifts are reproducible run to run.
+let rngState = 1;
+function rand() { rngState = (Math.imul(rngState, 1664525) + 1013904223) >>> 0; return rngState / 4294967296; }
+
+/* =====================================================================
+   RENDERER / SCENE
+   ===================================================================== */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+renderer.setSize(window.innerWidth, window.innerHeight);
+const scene = new THREE.Scene();
+const HORIZON_COLOR = new THREE.Color(0xf7a86a);
+scene.fog = new THREE.Fog(HORIZON_COLOR, 130, 195);
+const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.5, 900);
+camera.position.set(0, 6, -14);
+camera.lookAt(0, 1, 5);
+
+scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x1d5a66, 0.55));
+const sun = new THREE.DirectionalLight(0xffd9a8, 0.95);
+sun.position.set(-40, 25, 60);
+scene.add(sun);
+const SUN_DIR = sun.position.clone().normalize();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* =====================================================================
+   SKY
+   ===================================================================== */
+const sky = new THREE.Mesh(
+  new THREE.SphereGeometry(600, 32, 16),
+  new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    uniforms: {
+      uHorizon: { value: new THREE.Color(0xff8c3a) },
+      uMid:     { value: new THREE.Color(0xffc48a) },
+      uZenith:  { value: new THREE.Color(0x8fc3ec) },
+    },
+    vertexShader: [
+      'varying vec3 vDir;',
+      'void main() { vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    ].join('\n'),
+    fragmentShader: [
+      'uniform vec3 uHorizon, uMid, uZenith;',
+      'varying vec3 vDir;',
+      'void main() {',
+      '  float y = normalize(vDir).y;',
+      '  vec3 c = mix(uHorizon, uMid, smoothstep(-0.02, 0.12, y));',
+      '  c = mix(c, uZenith, smoothstep(0.08, 0.55, y));',
+      '  gl_FragColor = vec4(c, 1.0);',
+      '}',
+    ].join('\n'),
+  })
+);
+sky.renderOrder = -1;
+scene.add(sky);
+
+/* =====================================================================
+   WATER
+   ===================================================================== */
+const waterGeo = new THREE.PlaneGeometry(400, 400, 128, 128);
+waterGeo.rotateX(-Math.PI / 2);
+const waterMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime:    { value: 0 },
+    uCamPos:  { value: new THREE.Vector3() },
+    uSunDir:  { value: SUN_DIR },
+    uDeep:    { value: new THREE.Color(0x0b5f6e) },
+    uShallow: { value: new THREE.Color(0x52dccb) },
+    uFog:     { value: HORIZON_COLOR },
+  },
+  vertexShader: WAVE_GLSL + [
+    'uniform float uTime;',
+    'varying float vH;',
+    'varying vec3 vWorld;',
+    'varying vec3 vNormal;',
+    'void main() {',
+    '  vec4 wp = modelMatrix * vec4(position, 1.0);',
+    '  float h = waveHeight(wp.xz, uTime);',
+    '  float e = 0.6;',
+    '  float hx = waveHeight(wp.xz + vec2(e, 0.0), uTime);',
+    '  float hz = waveHeight(wp.xz + vec2(0.0, e), uTime);',
+    '  vNormal = normalize(vec3(h - hx, e, h - hz));',
+    '  wp.y += h;',
+    '  vH = h;',
+    '  vWorld = wp.xyz;',
+    '  gl_Position = projectionMatrix * viewMatrix * wp;',
+    '}',
+  ].join('\n'),
+  fragmentShader: [
+    'uniform vec3 uCamPos, uSunDir, uDeep, uShallow, uFog;',
+    'varying float vH;',
+    'varying vec3 vWorld;',
+    'varying vec3 vNormal;',
+    'void main() {',
+    '  float t = clamp((vH + 0.7) / 1.7, 0.0, 1.0);',
+    '  vec3 col = mix(uDeep, uShallow, t * t * t);',
+    '  vec3 n = normalize(vNormal);',
+    '  vec3 vdir = normalize(uCamPos - vWorld);',
+    '  float fres = pow(1.0 - max(dot(n, vdir), 0.0), 3.0);',
+    '  col = mix(col, uFog * 0.85, fres * 0.55);',
+    '  vec3 hv = normalize(uSunDir + vdir);',
+    '  float spec = pow(max(dot(n, hv), 0.0), 260.0);',
+    '  col += vec3(1.0, 0.92, 0.75) * spec * 0.45;',
+    '  float d = length(uCamPos - vWorld);',
+    '  float fog = max(1.0 - exp(-pow(d * 0.0055, 1.7)), smoothstep(130.0, 195.0, d));',
+    '  col = mix(col, uFog, fog);',
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}',
+  ].join('\n'),
+});
+const water = new THREE.Mesh(waterGeo, waterMat);
+scene.add(water);
+
+/* =====================================================================
+   BOAT
+   ===================================================================== */
+const boatGroup = new THREE.Group();
+boatGroup.rotation.order = 'YXZ';
+scene.add(boatGroup);
+const crew = [];       // crew groups (lean via rotation.x)
+let sailPivot, sailMesh, sailBase = null, sailUV = null;
+
+(function buildBoat() {
+  const hullMat = new THREE.MeshPhongMaterial({ color: 0x5c3418, shininess: 40 });
+  const trimMat = new THREE.MeshPhongMaterial({ color: 0xd94a2b, shininess: 20 });
+  const woodMat = new THREE.MeshPhongMaterial({ color: 0xc9a165, shininess: 10 });
+  for (const sx of [-2.2, 2.2]) {
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 8), hullMat);
+    hull.position.set(sx, 0, 0);
+    boatGroup.add(hull);
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.16, 8.02), trimMat);
+    stripe.position.set(sx, 0.2, 0);
+    boatGroup.add(stripe);
+    const bow = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.8, 10), hullMat);
+    bow.rotation.x = Math.PI / 2; bow.scale.z = 0.67;
+    bow.position.set(sx, 0, 4.9);
+    boatGroup.add(bow);
+    const stern = new THREE.Mesh(new THREE.ConeGeometry(0.6, 1.2, 10), hullMat);
+    stern.rotation.x = -Math.PI / 2; stern.scale.z = 0.67;
+    stern.position.set(sx, 0, -4.6);
+    boatGroup.add(stern);
+  }
+  // Deck platform joining the hulls, with two cross beams.
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.22, 3.4), woodMat);
+  deck.position.set(0, 0.5, 0);
+  boatGroup.add(deck);
+  for (const bz of [-2.6, 2.6]) {
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.18, 0.4), woodMat);
+    beam.position.set(0, 0.48, bz);
+    boatGroup.add(beam);
+  }
+  // Mast + pennant.
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, 7.4, 8), woodMat);
+  mast.position.set(0, 0.6 + 3.7, 0.3);
+  boatGroup.add(mast);
+  const pennant = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.4), new THREE.MeshBasicMaterial({ color: 0xff3b2e, side: THREE.DoubleSide }));
+  pennant.position.set(0.5, 8.0, 0.3);
+  boatGroup.add(pennant);
+
+  // Sail: a plane tapered into a triangle. Luff along the mast, foot aft (-z).
+  const sg = new THREE.PlaneGeometry(4.2, 6.2, 6, 9);
+  const pos = sg.attributes.position;
+  sailUV = new Float32Array(pos.count * 2);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i) + 2.1;        // 0 .. 4.2, mast side at 0
+    const y = pos.getY(i) + 3.1;        // 0 .. 6.2
+    const v = y / 6.2;
+    sailUV[i * 2] = x / 4.2;
+    sailUV[i * 2 + 1] = v;
+    pos.setXYZ(i, x * (1 - v * 0.96), y, 0);
+  }
+  sg.rotateY(Math.PI / 2);              // +x -> -z (aft)
+  sg.computeVertexNormals();
+  sailBase = pos.array.slice();
+  sailMesh = new THREE.Mesh(sg, new THREE.MeshPhongMaterial({ color: 0xfff1d6, emissive: 0x332211, side: THREE.DoubleSide, shininess: 5 }));
+  sailPivot = new THREE.Group();
+  sailPivot.position.set(0, 1.2, 0.3);
+  sailPivot.add(sailMesh);
+  boatGroup.add(sailPivot);
+  // Boom along the foot of the sail.
+  const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4.2, 6), woodMat);
+  boom.rotation.x = Math.PI / 2;
+  boom.position.set(0, 0.05, -2.1);
+  sailPivot.add(boom);
+
+  // Crew: six rowers, three per hull. Cylinder body + sphere head, no CapsuleGeometry.
+  const shirtColors = [0xd23c2a, 0xf0c030, 0x2a8ad2, 0x39b54a, 0xe86fb0, 0xff8c1a];
+  const skinMat = new THREE.MeshPhongMaterial({ color: 0x7a4a2a, shininess: 15 });
+  const paddleMat = new THREE.MeshPhongMaterial({ color: 0x8b5a2b });
+  let ci = 0;
+  for (const sx of [-2.2, 2.2]) {
+    for (const cz of [2.2, 0, -2.2]) {
+      const g = new THREE.Group();
+      g.position.set(sx, 0.35, cz);
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.32, 0.8, 8), new THREE.MeshPhongMaterial({ color: shirtColors[ci++], shininess: 10 }));
+      body.position.y = 0.4;
+      g.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 8), skinMat);
+      head.position.y = 0.98;
+      g.add(head);
+      // Paddle hangs from a pivot at the hands; it tilts outboard so the
+      // blade reaches the water beside the hull, and swings fore-aft per stroke.
+      const side = Math.sign(sx);
+      const pivot = new THREE.Group();
+      pivot.position.set(side * 0.45, 0.85, 0.15);
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2, 6), paddleMat);
+      shaft.position.y = -0.8;                       // grip just above the hands, blade end well below
+      pivot.add(shaft);
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.55, 0.06), paddleMat);
+      blade.position.y = -1.75;
+      pivot.add(blade);
+      g.add(pivot);
+      boatGroup.add(g);
+      crew.push({ group: g, pivot, side });
+    }
+  }
+})();
+
+/* =====================================================================
+   COURSE: buoy gates + finish line
+   ===================================================================== */
+const buoys = [];   // { group, x, z }
+const gates = [];   // { z, passed }
+(function buildCourse() {
+  const orangeMat = new THREE.MeshPhongMaterial({ color: 0xff7a1a, shininess: 60 });
+  const poleMat = new THREE.MeshPhongMaterial({ color: 0x3a2a1a });
+  const buoyGeo = new THREE.SphereGeometry(0.8, 12, 10);
+  const poleGeo = new THREE.CylinderGeometry(0.09, 0.12, 1.6, 6);
+  const baseGeo = new THREE.CylinderGeometry(0.7, 0.9, 0.35, 10);
+  for (let gz = GATE_SPACING; gz < COURSE_LENGTH; gz += GATE_SPACING) {
+    gates.push({ z: gz, passed: false });
+    for (const sx of [-GATE_HALF_WIDTH, GATE_HALF_WIDTH]) {
+      const g = new THREE.Group();
+      const base = new THREE.Mesh(baseGeo, poleMat); base.position.y = 0.1; g.add(base);
+      const pole = new THREE.Mesh(poleGeo, poleMat); pole.position.y = 1.0; g.add(pole);
+      const ball = new THREE.Mesh(buoyGeo, orangeMat); ball.position.y = 2.3; g.add(ball);
+      g.position.set(sx, 0, gz);
+      scene.add(g);
+      buoys.push({ group: g, x: sx, z: gz });
+    }
+  }
+  // Finish line: two bamboo poles with festival flags strung between them.
+  const bambooMat = new THREE.MeshPhongMaterial({ color: 0xd9b96a, shininess: 30 });
+  const ringMat = new THREE.MeshPhongMaterial({ color: 0x8a7030 });
+  for (const sx of [-FINISH_HALF_WIDTH, FINISH_HALF_WIDTH]) {
+    const g = new THREE.Group();
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 13, 10), bambooMat);
+    pole.position.y = 6.5; g.add(pole);
+    for (let y = 1.5; y < 13; y += 2.2) {
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.31, 0.31, 0.18, 10), ringMat);
+      ring.position.y = y; g.add(ring);
+    }
+    const raft = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 0.5, 12), ringMat);
+    raft.position.y = 0.15; g.add(raft);
+    g.position.set(sx, 0, COURSE_LENGTH);
+    scene.add(g);
+    buoys.push({ group: g, x: sx, z: COURSE_LENGTH });
+  }
+  // String with a catenary sag, plus triangular pennants hanging from it.
+  const stringPts = [];
+  const N = 40, top = 12.4, sag = 2.2;
+  const stringY = (x) => top - sag * (1 - (x / FINISH_HALF_WIDTH) * (x / FINISH_HALF_WIDTH));
+  for (let i = 0; i <= N; i++) {
+    const x = -FINISH_HALF_WIDTH + (2 * FINISH_HALF_WIDTH * i) / N;
+    stringPts.push(new THREE.Vector3(x, stringY(x), COURSE_LENGTH));
+  }
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(stringPts), new THREE.LineBasicMaterial({ color: 0x3a2a1a })));
+  const flagColors = [0xff3b2e, 0xffd23a, 0x2fb8ff, 0x3ddc6a, 0xff7ad9, 0xffffff, 0xff8c1a];
+  const flagGeo = new THREE.BufferGeometry();
+  flagGeo.setAttribute('position', new THREE.Float32BufferAttribute([-0.55, 0, 0, 0.55, 0, 0, 0, -1.3, 0], 3));
+  flagGeo.computeVertexNormals();
+  for (let i = 0; i < 16; i++) {
+    const x = -FINISH_HALF_WIDTH + 1.0 + (2 * (FINISH_HALF_WIDTH - 1.0) * i) / 15;
+    const flag = new THREE.Mesh(flagGeo, new THREE.MeshBasicMaterial({ color: flagColors[i % flagColors.length], side: THREE.DoubleSide }));
+    flag.position.set(x, stringY(x), COURSE_LENGTH);
+    scene.add(flag);
+  }
+})();
+
+/* =====================================================================
+   SIM STATE
+   ===================================================================== */
+const sim = {
+  state: 'MENU',                       // MENU | COUNTDOWN | RACING | FINISHED
+  boat: { x: 0, z: 0, heading: 0, v: 0 },
+  simTime: 0,                          // physics seconds since the race began
+  countdown: 0,
+  elapsed: 0,                          // race clock (without penalties)
+  penalties: 0,
+  gatesClean: 0,
+  stamina: 100,
+  exhausted: false,
+  mult: 1,
+  strokes: 0,
+  lastStrokeTime: -10,
+  strokePhase: 0,                      // 1 right after a stroke, decays to 0 (visual)
+  lastQuality: '',
+  lastQualityTime: -10,
+  sailAngle: 0.5,
+  sailBonus: 1,
+  sailErr: 0,
+  wind: { dir: 0, timer: 0, next: 10 },
+  results: null,
+  penaltyFlash: 0,
+};
+const input = { left: false, right: false, up: false, down: false };
+
+/* =====================================================================
+   INPUT
+   ===================================================================== */
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) onTap(); return; }
+  if (e.code === 'Enter' && sim.state === 'MENU') { startRace(); return; }
+  if (e.repeat) return;
+  switch (e.code) {
+    case 'ArrowLeft': case 'KeyA': input.left = true; e.preventDefault(); break;
+    case 'ArrowRight': case 'KeyD': input.right = true; e.preventDefault(); break;
+    case 'ArrowUp': case 'KeyW': input.up = true; e.preventDefault(); break;
+    case 'ArrowDown': case 'KeyS': input.down = true; e.preventDefault(); break;
+  }
+});
+window.addEventListener('keyup', (e) => {
+  switch (e.code) {
+    case 'ArrowLeft': case 'KeyA': input.left = false; break;
+    case 'ArrowRight': case 'KeyD': input.right = false; break;
+    case 'ArrowUp': case 'KeyW': input.up = false; break;
+    case 'ArrowDown': case 'KeyS': input.down = false; break;
+  }
+});
+window.addEventListener('blur', () => { input.left = input.right = input.up = input.down = false; });
+canvas.addEventListener('pointerdown', (e) => { e.preventDefault(); onTap(); });
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); }, { passive: false });
+
+// A tap while racing is judged against the drum beat, then applied as a stroke.
+function onTap() {
+  ensureAudio(); resumeAudio();
+  if (sim.state !== 'RACING') return;
+  applyStroke(judgeTap());
+}
+
+/* =====================================================================
+   RHYTHM + AUDIO (Web Audio synthesis, no files)
+   ===================================================================== */
+let audioCtx = null, masterGain = null, muted = false;
+function ensureAudio() {
+  if (audioCtx) return audioCtx;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = muted ? 0 : 0.8;
+    masterGain.connect(audioCtx.destination);
+  } catch (e) { audioCtx = null; masterGain = null; }
+  return audioCtx;
+}
+function resumeAudio() {
+  if (!audioCtx) return;
+  try {
+    if (audioCtx.state === 'suspended') {
+      const p = audioCtx.resume();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    }
+  } catch (e) { /* never throw without a gesture */ }
+}
+function audioRunning() { return !!audioCtx && audioCtx.state === 'running'; }
+function tone(freq, endFreq, dur, gain, type, at) {
+  if (!audioRunning() || muted) return;
+  try {
+    const t = Math.max(at || 0, audioCtx.currentTime);
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t + dur * 0.8);
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(masterGain);
+    o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) { /* ignore audio failures */ }
+}
+const playThump = (at) => tone(150, 45, 0.18, 0.9, 'sine', at);     // low drum on each beat
+const playClick = () => tone(1400, 0, 0.05, 0.3, 'triangle', 0);      // higher click on a perfect hit
+const playBeep = (hi) => tone(hi ? 880 : 520, 0, hi ? 0.5 : 0.18, 0.35, 'square', 0);
+
+$('mutebtn').addEventListener('click', () => {
+  muted = !muted;
+  if (masterGain) masterGain.gain.value = muted ? 0 : 0.8;
+  $('mutebtn').innerHTML = muted ? '&#128263;' : '&#128266;';
+  $('mutebtn').title = muted ? 'Unmute' : 'Mute';
+});
+
+// The beat clock is the AudioContext clock while it runs; otherwise a
+// performance.now() clock stands in (a suspended context's clock is frozen).
+const beat = { origin: 0, kind: 'perf', nextToSchedule: 0, lastClaimed: -1 };
+function rawClock(kind) { return kind === 'audio' ? audioCtx.currentTime : performance.now() / 1000; }
+function beatNow() {
+  const want = audioRunning() ? 'audio' : 'perf';
+  if (want !== beat.kind) {                         // rebase the origin onto the new clock
+    const elapsedBeats = rawClock(beat.kind) - beat.origin;
+    beat.kind = want;
+    beat.origin = rawClock(want) - elapsedBeats;
+  }
+  return rawClock(beat.kind);
+}
+function startBeatClock() {
+  beat.kind = audioRunning() ? 'audio' : 'perf';
+  beat.origin = rawClock(beat.kind);
+  beat.nextToSchedule = 0;
+  beat.lastClaimed = -1;
+}
+function scheduleBeats() {
+  const now = beatNow();
+  const horizon = now + 0.15;
+  while (beat.origin + beat.nextToSchedule * BEAT_INTERVAL < horizon) {
+    const t = beat.origin + beat.nextToSchedule * BEAT_INTERVAL;
+    if (t >= now - 0.03 && beat.kind === 'audio') playThump(t);
+    beat.nextToSchedule++;
+  }
+}
+function judgeTap() {
+  const now = beatNow();
+  const idx = Math.round((now - beat.origin) / BEAT_INTERVAL);
+  const delta = Math.abs(now - (beat.origin + idx * BEAT_INTERVAL));
+  if (idx <= beat.lastClaimed) return 'miss';      // a second tap on a beat already rowed
+  beat.lastClaimed = idx;
+  if (delta <= PERFECT_WINDOW) return 'perfect';
+  if (delta <= GOOD_WINDOW) return 'good';
+  return 'miss';
+}
+
+/* =====================================================================
+   PHYSICS (fixed timestep; no Three.js access in here)
+   ===================================================================== */
+function resetWind() {
+  rngState = 20240915;
+  sim.wind.dir = (rand() - 0.5) * Math.PI * 1.2;
+  sim.wind.timer = 0;
+  sim.wind.next = 8 + rand() * 4;
+}
+function updateWind(dt) {
+  sim.wind.timer += dt;
+  if (sim.wind.timer >= sim.wind.next) {
+    sim.wind.timer = 0;
+    sim.wind.next = 8 + rand() * 4;                 // shifts every 8 to 12 seconds
+    sim.wind.dir = wrapAngle(sim.wind.dir + (rand() - 0.5) * Math.PI * 0.9);
+  }
+}
+// Optimal sail angle for the wind relative to the boat: let the sail right
+// out on a following wind, sheet it in hard when the wind is ahead.
+function optimalSail(rel) {
+  const a = Math.abs(rel) / Math.PI;
+  const mag = (80 - 65 * a) * Math.PI / 180;
+  return (rel >= 0 ? -1 : 1) * mag;
+}
+function updateSail(dt) {
+  if (input.up) sim.sailAngle += SAIL_TRIM_RATE * dt;
+  if (input.down) sim.sailAngle -= SAIL_TRIM_RATE * dt;
+  sim.sailAngle = clamp(sim.sailAngle, -SAIL_LIMIT, SAIL_LIMIT);
+  const rel = wrapAngle(sim.wind.dir - sim.boat.heading);
+  let err = Math.abs(sim.sailAngle - optimalSail(rel));
+  if (Math.abs(rel) < 0.35) err = Math.min(err, Math.abs(sim.sailAngle - optimalSail(-rel)));  // dead downwind: either tack
+  sim.sailErr = err;
+  const within = 20 * Math.PI / 180;
+  sim.sailBonus = 1 + 0.4 * Math.max(0, 1 - err / within);
+}
+function applyStroke(quality) {
+  if (sim.state !== 'RACING') return;
+  if (quality === 'perfect') sim.mult = Math.min(MAX_MULT, sim.mult + 1);
+  else if (quality !== 'good') sim.mult = 1;
+  const m = sim.mult;
+  let cost = 1.0 + 0.5 * m;
+  let factor = 1;
+  if (sim.exhausted) { factor = 0.4; cost *= 0.25; }
+  sim.stamina = Math.max(0, sim.stamina - cost);
+  if (sim.stamina <= 0) sim.exhausted = true;
+  const gain = (2.0 + 0.55 * m) * sim.sailBonus * factor * (quality === 'miss' ? 0.6 : 1);
+  sim.boat.v = Math.min(sim.boat.v + gain, 26 * sim.sailBonus);
+  sim.strokes++;
+  sim.lastStrokeTime = sim.simTime;
+  sim.strokePhase = 1;
+  sim.lastQuality = quality;
+  sim.lastQualityTime = sim.simTime;
+  if (quality === 'perfect') playClick();
+}
+function stepPhysics(dt) {
+  const b = sim.boat;
+  if (sim.state === 'COUNTDOWN') {
+    sim.countdown -= dt;
+    if (sim.countdown <= 0) beginRacing();
+    return;
+  }
+  if (sim.state !== 'RACING' && sim.state !== 'FINISHED') return;
+
+  let turning = false;
+  if (sim.state === 'RACING') {
+    sim.simTime += dt;
+    sim.elapsed += dt;
+    updateWind(dt);
+    updateSail(dt);
+    if (input.left) { b.heading += 1.4 * dt; turning = true; }
+    if (input.right) { b.heading -= 1.4 * dt; turning = true; }
+    b.heading = wrapAngle(b.heading);
+    // Stamina regenerates always, and much faster while the crew rests.
+    const resting = sim.simTime - sim.lastStrokeTime > 1.0;
+    sim.stamina = Math.min(100, sim.stamina + (4 + (resting ? 8 : 0)) * dt);
+    if (sim.exhausted && sim.stamina > 25) sim.exhausted = false;
+    // Skipping a beat breaks the stroke combo.
+    if (sim.mult > 1 && sim.simTime - sim.lastStrokeTime > BEAT_INTERVAL + GOOD_WINDOW) {
+      sim.mult = 1; sim.lastQuality = 'miss'; sim.lastQualityTime = sim.simTime;
+    }
+  }
+  if (turning) b.v *= Math.max(0, 1 - 0.7 * dt);   // sharp turns bleed speed
+  b.v -= (0.55 * b.v + 0.004 * b.v * b.v) * dt;
+  if (b.v < 0) b.v = 0;
+  const prevZ = b.z;
+  b.x += Math.sin(b.heading) * b.v * dt;
+  b.z += Math.cos(b.heading) * b.v * dt;
+
+  if (sim.state === 'RACING') {
+    for (let i = 0; i < gates.length; i++) {
+      const g = gates[i];
+      if (!g.passed && prevZ < g.z && b.z >= g.z) {
+        g.passed = true;
+        if (Math.abs(b.x) <= GATE_HALF_WIDTH) sim.gatesClean++;
+        else { sim.penalties++; sim.penaltyFlash = 1; }
+      }
+    }
+    if (b.z >= COURSE_LENGTH) finishRace();
+  }
+}
+
+/* =====================================================================
+   HUD
+   ===================================================================== */
+const ui = {
+  hud: $('hud'), time: $('time'), dist: $('dist'), pen: $('pen'), speed: $('speed'),
+  windarrow: $('windarrow'), sailstat: $('sailstat'), stamfill: $('stamfill'),
+  ringTarget: $('ring-target'), ringMove: $('ring-move'), mult: $('mult'), judge: $('judge'),
+  flash: $('flash'), flashmsg: $('flashmsg'), menu: $('menu'), countdown: $('countdown'), count: $('count'),
+  results: $('results'), resStars: $('res-stars'), resTime: $('res-time'), resGates: $('res-gates'), resPen: $('res-pen'),
+};
+function fmtTime(s) {
+  const m = Math.floor(s / 60), r = s - m * 60;
+  return m + ':' + (r < 10 ? '0' : '') + r.toFixed(2);
+}
+let lastCountShown = -1, lastFlash = 0;
+function updateHUD() {
+  const b = sim.boat;
+  ui.time.textContent = fmtTime(sim.elapsed);
+  ui.dist.textContent = Math.max(0, Math.ceil(COURSE_LENGTH - b.z)) + ' m to finish';
+  ui.pen.textContent = 'Penalties: ' + sim.penalties + (sim.penalties ? ' (+' + sim.penalties * GATE_PENALTY + 's)' : '');
+  ui.pen.classList.toggle('hot', sim.penalties > 0);
+  ui.speed.textContent = b.v.toFixed(1);
+  const rel = wrapAngle(sim.wind.dir - b.heading);
+  ui.windarrow.style.transform = 'rotate(' + (-rel * 180 / Math.PI).toFixed(1) + 'deg)';
+  const deg = Math.round(sim.sailAngle * 180 / Math.PI);
+  const trimmed = sim.sailBonus > 1.02;
+  ui.sailstat.textContent = 'SAIL ' + deg + '° · ' + (trimmed ? 'DRAWING x' + sim.sailBonus.toFixed(2) : 'LUFFING');
+  ui.sailstat.className = trimmed ? 'good' : 'bad';
+  ui.stamfill.style.width = sim.stamina.toFixed(1) + '%';
+  ui.stamfill.classList.toggle('tired', sim.exhausted);
+  ui.mult.textContent = sim.mult + 'x';
+  const showJudge = sim.state === 'RACING' && sim.simTime - sim.lastQualityTime < 0.6;
+  ui.judge.textContent = showJudge ? sim.lastQuality.toUpperCase() : '';
+  ui.judge.className = showJudge ? sim.lastQuality : '';
+
+  // Beat indicator: a ring shrinks onto the target ring on every beat.
+  if (sim.state === 'RACING') {
+    const now = beatNow();
+    const phase = ((now - beat.origin) / BEAT_INTERVAL) % 1;
+    const s = 1 + 1.3 * (1 - phase);
+    ui.ringMove.style.transform = 'scale(' + s.toFixed(3) + ')';
+    ui.ringMove.style.opacity = (0.35 + 0.65 * phase).toFixed(2);
+    ui.ringTarget.classList.toggle('pulse', phase < 0.15);
+  } else {
+    ui.ringMove.style.transform = 'scale(1)';
+    ui.ringTarget.classList.remove('pulse');
+  }
+
+  if (sim.state === 'COUNTDOWN') {
+    const n = Math.max(1, Math.ceil(sim.countdown));
+    ui.count.textContent = n;
+    if (n !== lastCountShown) { lastCountShown = n; playBeep(false); }
+  } else if (sim.state === 'RACING' && sim.simTime < 0.7) {
+    ui.countdown.hidden = false; ui.count.textContent = 'GO!';
+  } else if (!ui.countdown.hidden && sim.state !== 'COUNTDOWN') {
+    ui.countdown.hidden = true;
+  }
+
+  // Missed-gate warning flash.
+  if (sim.penaltyFlash > 0) {
+    if (lastFlash <= 0) { ui.flash.classList.add('on'); ui.flashmsg.hidden = false; }
+    else if (sim.penaltyFlash < 0.9) ui.flash.classList.remove('on');
+    if (sim.penaltyFlash < 0.05) ui.flashmsg.hidden = true;
+  }
+  lastFlash = sim.penaltyFlash;
+}
+function showResults(r) {
+  ui.resStars.textContent = '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars);
+  ui.resTime.textContent = fmtTime(r.time);
+  ui.resGates.textContent = 'Gates passed cleanly: ' + r.gates + ' / ' + gates.length;
+  ui.resPen.textContent = 'Penalties: ' + r.penalties + ' (+' + (r.penalties * GATE_PENALTY) + 's)';
+}
+
+/* =====================================================================
+   GAME STATE MACHINE: MENU -> COUNTDOWN -> RACING -> FINISHED
+   ===================================================================== */
+function setState(s) {
+  sim.state = s;
+  ui.menu.hidden = s !== 'MENU';
+  ui.countdown.hidden = s !== 'COUNTDOWN';
+  ui.results.hidden = s !== 'FINISHED';
+  ui.hud.hidden = s === 'MENU';
+}
+function startRace() {
+  if (sim.state !== 'MENU') return;
+  ensureAudio(); resumeAudio();
+  sim.countdown = COUNTDOWN_SECONDS;
+  lastCountShown = -1;
+  setState('COUNTDOWN');
+}
+function beginRacing() {
+  sim.simTime = 0;
+  sim.elapsed = 0;
+  sim.lastStrokeTime = -10;
+  startBeatClock();
+  setState('RACING');
+  playBeep(true);
+}
+function finishRace() {
+  const time = Math.round((sim.elapsed + sim.penalties * GATE_PENALTY) * 100) / 100;
+  const stars = time < 75 ? 3 : (time < 95 ? 2 : 1);
+  sim.results = { time, gates: sim.gatesClean, penalties: sim.penalties, stars };
+  showResults(sim.results);
+  setState('FINISHED');
+  playBeep(true);
+}
+function reset() {
+  Object.assign(sim.boat, { x: 0, z: 0, heading: 0, v: 0 });
+  sim.simTime = 0; sim.countdown = 0; sim.elapsed = 0;
+  sim.penalties = 0; sim.gatesClean = 0;
+  sim.stamina = 100; sim.exhausted = false;
+  sim.mult = 1; sim.strokes = 0; sim.lastStrokeTime = -10; sim.strokePhase = 0;
+  sim.lastQuality = ''; sim.lastQualityTime = -10;
+  sim.sailAngle = 0.5; sim.sailBonus = 1; sim.sailErr = 0;
+  sim.results = null; sim.penaltyFlash = 0;
+  input.left = input.right = input.up = input.down = false;
+  for (let i = 0; i < gates.length; i++) gates[i].passed = false;
+  resetWind();
+  camState.init = false;
+  ui.flash.classList.remove('on'); ui.flashmsg.hidden = true; lastFlash = 0;
+  setState('MENU');
+  updateHUD();
+}
+$('start').addEventListener('click', () => { ensureAudio(); resumeAudio(); startRace(); });
+$('again').addEventListener('click', () => { ensureAudio(); resumeAudio(); reset(); startRace(); });
+
+/* =====================================================================
+   VISUAL UPDATE (boat, camera, water, buoys)
+   ===================================================================== */
+let waveTime = 0;
+const camState = { heading: 0, pos: new THREE.Vector3(0, 6, -14), look: new THREE.Vector3(0, 1, 5), init: false };
+const _v = new THREE.Vector3();
+
+function updateVisuals(dt) {
+  const b = sim.boat, t = waveTime;
+  const fx = Math.sin(b.heading), fz = Math.cos(b.heading);
+  const rx = fz, rz = -fx;
+  const hc = waveHeight(b.x, b.z, t);
+  const hb = waveHeight(b.x + fx * 4, b.z + fz * 4, t);
+  const hs = waveHeight(b.x - fx * 4, b.z - fz * 4, t);
+  const hr = waveHeight(b.x + rx * 2.2, b.z + rz * 2.2, t);
+  const hl = waveHeight(b.x - rx * 2.2, b.z - rz * 2.2, t);
+  boatGroup.position.set(b.x, hc + 0.35, b.z);
+  boatGroup.rotation.y = b.heading;
+  boatGroup.rotation.x = -Math.atan2(hb - hs, 8) - b.v * 0.004;   // a little bow lift at speed
+  boatGroup.rotation.z = Math.atan2(hr - hl, 4.4);
+
+  // Paddle stroke: strokePhase goes 1 -> 0 over 0.45 s after each stroke.
+  // Drive (first 55%): blade in the water, swung from bow to stern while the
+  // rower leans back. Recovery: blade lifted clear and swung forward again,
+  // rower leaning forward to the catch. The idle pose equals the catch pose.
+  sim.strokePhase = Math.max(0, sim.strokePhase - dt / 0.45);
+  sim.penaltyFlash = Math.max(0, sim.penaltyFlash - dt / 1.2);
+  const p = 1 - sim.strokePhase;
+  const drive = p < 0.55;
+  const q = drive ? p / 0.55 : (p - 0.55) / 0.45;
+  const swing = drive ? 0.7 - 1.3 * q : -0.6 + 1.3 * (q * q * (3 - 2 * q));
+  const lift = drive ? 0.05 : 0.05 + 0.5 * Math.sin(q * Math.PI);
+  const lean = drive ? 0.3 - 0.55 * q : -0.25 + 0.55 * q;
+  for (let i = 0; i < crew.length; i++) {
+    const c = crew[i];
+    c.group.rotation.x = lean;
+    c.pivot.rotation.x = -swing;                 // blade forward at the catch, aft at the finish
+    c.pivot.rotation.z = c.side * (0.5 + lift);  // outboard tilt; more tilt raises the blade clear
+  }
+
+  // Sail: pivot to trim angle, billow when drawing, luff when badly trimmed.
+  sailPivot.rotation.y = sim.sailAngle;
+  const draw = clamp((sim.sailBonus - 1) / 0.4, 0, 1);
+  const luff = (sim.state === 'RACING' || sim.state === 'FINISHED') ? (1 - draw) * 0.9 : 0.25;
+  const pos = sailMesh.geometry.attributes.position;
+  const arr = pos.array;
+  for (let i = 0; i < pos.count; i++) {
+    const u = sailUV[i * 2], v = sailUV[i * 2 + 1];
+    const shape = Math.sin(u * Math.PI) * Math.sin(v * Math.PI);
+    const billow = (0.15 + 1.1 * draw) * shape;
+    const flap = luff * shape * (Math.sin(t * 14 + v * 9) * 0.35 + Math.sin(t * 23 + u * 7) * 0.2);
+    arr[i * 3] = sailBase[i * 3] + billow + flap;
+  }
+  pos.needsUpdate = true;
+
+  // Water follows the boat; the shader samples world coordinates so no seams.
+  water.position.set(b.x, 0, b.z);
+  waterMat.uniforms.uTime.value = t;
+
+  // Buoys and finish poles bob on the same waves.
+  for (let i = 0; i < buoys.length; i++) {
+    const bu = buoys[i];
+    bu.group.position.y = waveHeight(bu.x, bu.z, t);
+    bu.group.rotation.z = 0.08 * Math.sin(t * 1.3 + bu.x);
+  }
+
+  // Chase camera with damped follow and lag on turns.
+  const k = 1 - Math.exp(-4 * dt), kh = 1 - Math.exp(-2.5 * dt);
+  camState.heading += wrapAngle(b.heading - camState.heading) * kh;
+  const cfx = Math.sin(camState.heading), cfz = Math.cos(camState.heading);
+  _v.set(b.x - cfx * 14, hc * 0.3 + 6.2, b.z - cfz * 14);
+  if (camState.init && camState.pos.distanceToSquared(_v) > 40 * 40) camState.init = false;  // snap after a big jump
+  if (!camState.init) {
+    camState.heading = b.heading;
+    camState.pos.set(b.x - fx * 14, hc * 0.3 + 6.2, b.z - fz * 14);
+    camState.look.set(b.x + fx * 6, 1.2, b.z + fz * 6);
+    camState.init = true;
+  }
+  camState.pos.lerp(_v, k);
+  _v.set(b.x + fx * 6, 1.2, b.z + fz * 6);
+  camState.look.lerp(_v, k);
+  camera.position.copy(camState.pos);
+  camera.lookAt(camState.look);
+  sky.position.copy(camera.position);
+  waterMat.uniforms.uCamPos.value.copy(camera.position);
+}
+
+/* =====================================================================
+   TEST HOOKS
+   ===================================================================== */
+window.__test = {
+  ready: false,
+  stroke(quality) {
+    applyStroke(quality === 'perfect' ? 'perfect' : (quality === 'good' ? 'good' : 'miss'));
+  },
+  tick(dtSeconds) {
+    const n = Math.max(1, Math.round((+dtSeconds || 0) / STEP));
+    for (let i = 0; i < n; i++) stepPhysics(STEP);
+  },
+  startRace,
+  reset,
+  get state() { return sim.state; },
+  get distance() { return Math.max(0, sim.boat.z); },
+  get results() { return sim.results; },
+  _sim: sim,
+  _snapCamera() { camState.init = false; },
+};
+
+/* =====================================================================
+   MAIN LOOP (render at rAF rate; physics on the fixed step)
+   ===================================================================== */
+let lastFrame = performance.now(), accumulator = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = clamp((now - lastFrame) / 1000, 0, 0.1);   // rAF timestamps can precede performance.now() on frame one
+  lastFrame = now;
+  accumulator += dt;
+  let steps = 0;
+  while (accumulator >= STEP && steps < 6) { stepPhysics(STEP); accumulator -= STEP; steps++; }
+  if (steps === 6) accumulator = 0;
+  if (sim.state === 'RACING') scheduleBeats();
+  waveTime += dt;
+  updateVisuals(dt);
+  updateHUD();
+  renderer.render(scene, camera);
+  window.__test.ready = true;
+}
+reset();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
