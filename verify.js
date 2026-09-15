@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Mandaadi Race verification harness.
+// Tidebeat Race verification harness.
 // Launches headless Chromium (SwiftShader GL), loads index.html from a
 // file:// URL and drives the game through window.__test. Prints PASS/FAIL
 // for each of seven checks and exits non-zero if any fail.

@@ -1,8 +1,8 @@
 {
-  "name": "mandaadi-race",
+  "name": "tidebeat-race",
   "version": "1.0.0",
   "private": true,
-  "description": "Mandaadi Race - a Tamil Nadu coastal catamaran rhythm-rowing time trial (Three.js, single index.html). Playwright is used only by the verify.js test harness.",
+  "description": "Tidebeat Race - a coastal catamaran rhythm-rowing time trial (Three.js, single index.html). Fan-made, non-commercial project. Playwright is used only by the verify.js test harness.",
   "scripts": {
     "test": "node verify.js"
   },
