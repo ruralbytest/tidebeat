@@ -1,10 +1,12 @@
 <!DOCTYPE html>
+<!-- Mandaadi Race: a Three.js catamaran rhythm-rowing time trial. Single-file game; verify.js drives it headlessly via window.__test. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Mandaadi Race</title>
 <style>
+  /* Layout and HUD styling: full-screen canvas, corner panels, stamina bar and rhythm ring. */
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0b3b4a; font-family: "Trebuchet MS", "Segoe UI", sans-serif; color: #fff8ec; }
   #c { display: block; width: 100%; height: 100%; touch-action: none; }
   [hidden] { display: none !important; }
@@ -54,6 +56,65 @@
   #res-time { font-size: 36px; font-weight: bold; }
   .resline { font-size: 17px; margin: 4px 0; color: #ffe9c8; }
   #again { margin-top: 18px; }
+  /* Coastal race identity: warm paper, sea glass, and vermilion. */
+  body { font-family: 'Segoe UI', sans-serif; color: #fff8e9; }
+  .panel { background: rgba(9, 43, 46, .76); border: 1px solid #ffffff24; border-radius: 18px; padding: 18px 22px; backdrop-filter: blur(16px); text-shadow: none; box-shadow: 0 8px 32px #05252920; }
+  #hud-tl { top: 28px; left: 28px; }
+  #hud-tr { top: 86px; right: 28px; }
+  #hud-bl { bottom: 28px; left: 28px; }
+  .big { font-weight: 500; font-variant-numeric: tabular-nums; font-size: 36px; }
+  .small { font-size: 10px; letter-spacing: 2px; line-height: 1.7; }
+  #stam { height: 7px; border: none; background: #ffffff20; }
+  #stamfill { background: linear-gradient(90deg, #58bfa4, #d2ecae); }
+  #mutebtn { top: 28px; right: 28px; width: 44px; height: 44px; border-radius: 50%; border-color: #ffffff40; backdrop-filter: blur(12px); }
+  #menu { align-items: flex-start; text-align: left; padding: 5.5vw; background: linear-gradient(90deg, rgba(5,35,39,.91), rgba(5,35,39,.65) 36%, rgba(5,35,39,.04) 72%); }
+  .brand { position: absolute; top: 34px; left: 5.5vw; display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 600; letter-spacing: 3px; }
+  .brand svg { width: 32px; height: 32px; }
+  .eyebrow { color: #edc991; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .eyebrow:before { content: ''; width: 26px; height: 1px; background: #edc991; }
+  #menu h1 { font-family: Georgia, serif; font-size: clamp(62px, 7.8vw, 116px); font-weight: 400; line-height: .91; letter-spacing: -5px; color: #fff5df; text-shadow: none; margin: 0 0 26px; }
+  #menu h1 em { color: #edb872; font-weight: 400; }
+  #menu .tagline { max-width: 340px; font-size: 15px; line-height: 1.75; color: #d0ded8; margin-bottom: 28px; }
+  .race-meta { display: flex; gap: 28px; margin-bottom: 30px; }
+  .race-meta strong { display: block; font-size: 20px; font-weight: 500; margin-bottom: 5px; }
+  .race-meta span { font-size: 9px; color: #a7c3bc; letter-spacing: 2px; text-transform: uppercase; }
+  .btn { font-size: 13px; font-weight: 600; padding: 18px 26px; border-radius: 8px; background: #efb776; color: #183a39; box-shadow: 0 6px 24px #0002; letter-spacing: 1px; transition: background .2s, transform .2s; }
+  .btn:hover { background: #ffd4a1; transform: translateY(-2px); }
+  .btn:active { transform: translateY(1px); box-shadow: none; }
+  .btn:focus-visible, #mutebtn:focus-visible { outline: 3px solid #fff8e9; outline-offset: 5px; }
+  .btn .arrow { margin-left: 40px; font-size: 19px; }
+  .controls { position: absolute; bottom: 32px; left: 5.5vw; right: 5.5vw; display: flex; gap: 32px; border-top: 1px solid #ffffff26; padding: 20px 0 0; margin: 0; border-radius: 0; background: none; font-size: 11px; color: #c0d3ce; }
+  kbd { font: inherit; color: #fff6e5; display: inline-block; border: 1px solid #ffffff35; border-radius: 4px; padding: 5px 7px; margin-right: 6px; }
+  .location { position: absolute; right: 5.5vw; bottom: 120px; text-align: right; font-size: 10px; letter-spacing: 3px; line-height: 2; color: #fff4da; }
+  .location span { display: block; opacity: .65; letter-spacing: 1px; }
+  #hud-bc { box-shadow: none; backdrop-filter: none; padding: 0; }
+  #mult { color: #f4ce91; font-size: 25px; text-shadow: none; }
+  #judge { font-size: 12px; }
+  #ring-target { border-width: 2px; box-shadow: 0 0 15px #f9cf8833; }
+  #ring-move { border-width: 2px; border-color: #efb776; }
+  #count { font-family: Georgia, serif; font-weight: 400; color: #fff5df; text-shadow: 0 10px 50px #103b3a80; }
+  #results { background: #062b3970; backdrop-filter: blur(12px); }
+  #rescard { border: 1px solid #e6c28b60; background: #123b3dec; border-radius: 22px; padding: 38px 46px; box-shadow: 0 24px 80px #001c3960; }
+  #rescard h2 { font-family: Georgia, serif; font-weight: 400; color: #fff0d6; }
+  #res-stars { color: #efb776; }
+  @media (max-width: 650px) {
+    #menu { padding: 26px; justify-content: center; background: linear-gradient(90deg, #052327e8, #05232775); }
+    .brand { top: 24px; left: 26px; font-size: 10px; }
+    #menu h1 { font-size: 68px; letter-spacing: -3px; }
+    #menu .tagline { max-width: 290px; font-size: 13px; }
+    .controls { left: 26px; right: 26px; bottom: 22px; gap: 12px; flex-wrap: wrap; font-size: 9px; }
+    .location { display: none; }
+    .race-meta { gap: 24px; margin-bottom: 24px; }
+    #hud-tl { top: 14px; left: 14px; } #hud-tr { right: 14px; top: 70px; }
+    .panel { padding: 12px 14px; } .big { font-size: 26px; }
+    #hud-bl { left: 14px; bottom: 18px; min-width: 110px; } #stam { width: 110px; }
+    #hud-bc { left: auto; right: 12px; transform: none; } #mutebtn { top: 14px; right: 14px; }
+  }
+  @media (max-height: 650px) {
+    #menu h1 { font-size: 60px; margin-bottom: 14px; } .eyebrow { margin-bottom: 14px; }
+    #menu .tagline { margin-bottom: 16px; } .race-meta { margin-bottom: 18px; }
+    .brand { top: 18px; } .controls { bottom: 14px; padding-top: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -90,10 +151,14 @@
 <div id="flashmsg" hidden>MISSED GATE +3s</div>
 
 <div id="menu" class="overlay">
-  <h1>Mandaadi Race</h1>
-  <p class="tagline">Captain the festival catamaran. Row on the drum, trim the sail, thread the buoys.</p>
-  <div class="controls">SPACE / tap = row on the beat &nbsp;&middot;&nbsp; &larr; &rarr; or A D = steer &nbsp;&middot;&nbsp; &uarr; &darr; or W S = trim sail</div>
-  <button id="start" class="btn">Start Race</button>
+  <div class="brand"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3v20M13 6L4 21h9zm6 4v11h9zM3 25q6 6 13 0 7 6 13 0" stroke="currentColor" stroke-width="1.5"/></svg> MANDAADI</div>
+  <div class="eyebrow">The coastal time trial</div>
+  <h1>Mandaadi<br><em>Race.</em></h1>
+  <p class="tagline">Find your rhythm. Catch the wind.<br>Captain a festival catamaran along the sunlit coast of Tamil Nadu.</p>
+  <div class="race-meta"><div><strong>1,200 m</strong><span>Open water</span></div><div><strong>120 BPM</strong><span>One rhythm</span></div><div><strong>6 rowers</strong><span>Your crew</span></div></div>
+  <button id="start" class="btn">Start Race <span class="arrow" aria-hidden="true">&rarr;</span></button>
+  <div class="location">TAMIL NADU, INDIA<span>A coastal festival. A race against time.</span></div>
+  <div class="controls"><span><kbd>SPACE</kbd> / tap &nbsp; Row to the beat</span><span><kbd>&larr; &rarr;</kbd> A / D &nbsp; Steer</span><span><kbd>&uarr; &darr;</kbd> W / S &nbsp; Trim sail</span></div>
 </div>
 <div id="countdown" class="overlay" hidden><div id="count">3</div></div>
 <div id="results" class="overlay" hidden>
@@ -107,7 +172,7 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="vendor/three.min.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -162,13 +227,13 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPrefere
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 const scene = new THREE.Scene();
-const HORIZON_COLOR = new THREE.Color(0xf7a86a);
+const HORIZON_COLOR = new THREE.Color(0xe8c9a0);
 scene.fog = new THREE.Fog(HORIZON_COLOR, 130, 195);
 const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.5, 900);
 camera.position.set(0, 6, -14);
 camera.lookAt(0, 1, 5);
 
-scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x1d5a66, 0.55));
+scene.add(new THREE.HemisphereLight(0xd9f2ef, 0x326f69, 0.85));
 const sun = new THREE.DirectionalLight(0xffd9a8, 0.95);
 sun.position.set(-40, 25, 60);
 scene.add(sun);
@@ -189,9 +254,9 @@ const sky = new THREE.Mesh(
     side: THREE.BackSide,
     depthWrite: false,
     uniforms: {
-      uHorizon: { value: new THREE.Color(0xff8c3a) },
-      uMid:     { value: new THREE.Color(0xffc48a) },
-      uZenith:  { value: new THREE.Color(0x8fc3ec) },
+      uHorizon: { value: HORIZON_COLOR },
+      uMid:     { value: new THREE.Color(0xc7dbd5) },
+      uZenith:  { value: new THREE.Color(0x6aafc3) },
     },
     vertexShader: [
       'varying vec3 vDir;',
@@ -222,8 +287,8 @@ const waterMat = new THREE.ShaderMaterial({
     uTime:    { value: 0 },
     uCamPos:  { value: new THREE.Vector3() },
     uSunDir:  { value: SUN_DIR },
-    uDeep:    { value: new THREE.Color(0x0b5f6e) },
-    uShallow: { value: new THREE.Color(0x52dccb) },
+    uDeep:    { value: new THREE.Color(0x126d78) },
+    uShallow: { value: new THREE.Color(0x64b9aa) },
     uFog:     { value: HORIZON_COLOR },
   },
   vertexShader: WAVE_GLSL + [
@@ -252,13 +317,16 @@ const waterMat = new THREE.ShaderMaterial({
     'void main() {',
     '  float t = clamp((vH + 0.7) / 1.7, 0.0, 1.0);',
     '  vec3 col = mix(uDeep, uShallow, t * t * t);',
-    '  vec3 n = normalize(vNormal);',
+    '  float ripple = sin(vWorld.x * 2.8 + vWorld.z * 1.7) * cos(vWorld.z * 3.1 - vH * 3.0);',
+    '  vec3 n = normalize(vNormal + vec3(ripple * 0.025, 0.0, ripple * 0.018));',
     '  vec3 vdir = normalize(uCamPos - vWorld);',
     '  float fres = pow(1.0 - max(dot(n, vdir), 0.0), 3.0);',
     '  col = mix(col, uFog * 0.85, fres * 0.55);',
     '  vec3 hv = normalize(uSunDir + vdir);',
     '  float spec = pow(max(dot(n, hv), 0.0), 260.0);',
-    '  col += vec3(1.0, 0.92, 0.75) * spec * 0.45;',
+    '  col += vec3(1.0, 0.92, 0.75) * spec * 0.85;',
+    '  float crest = smoothstep(0.75, 0.95, vH) * smoothstep(0.2, 0.85, ripple);',
+    '  col = mix(col, vec3(0.77, 0.9, 0.82), crest * 0.28);',
     '  float d = length(uCamPos - vWorld);',
     '  float fog = max(1.0 - exp(-pow(d * 0.0055, 1.7)), smoothstep(130.0, 195.0, d));',
     '  col = mix(col, uFog, fog);',
@@ -268,6 +336,55 @@ const waterMat = new THREE.ShaderMaterial({
 });
 const water = new THREE.Mesh(waterGeo, waterMat);
 scene.add(water);
+
+/* Hand-built coastal scenery. Shared geometry keeps the draw cost modest. */
+const coast = new THREE.Group();
+scene.add(coast);
+const sandMat = new THREE.MeshLambertMaterial({ color: 0xd7c296 });
+const greenMat = new THREE.MeshLambertMaterial({ color: 0x467c62 });
+const trunkMat = new THREE.MeshLambertMaterial({ color: 0x856b48 });
+const leafMat = new THREE.MeshLambertMaterial({ color: 0x2d7057, side: THREE.DoubleSide });
+const islandGeo = new THREE.SphereGeometry(1, 14, 8);
+const trunkGeo = new THREE.CylinderGeometry(.18, .32, 6, 7);
+const leafGeo = new THREE.BufferGeometry();
+leafGeo.setAttribute('position', new THREE.Float32BufferAttribute([0,0,0, 1.9,.55,-.65, 4,-.9,0, 0,0,0, 4,-.9,0, 1.9,.55,.65], 3));
+leafGeo.computeVertexNormals();
+for (let i = 0; i < 18; i++) {
+  const side = i % 2 ? -1 : 1;
+  const x = side * (66 + Math.sin(i * 7) * 14), z = i * 82 - 40;
+  const island = new THREE.Mesh(islandGeo, sandMat);
+  island.position.set(x, -2.5, z); island.scale.set(25, 5, 38); coast.add(island);
+  const grass = new THREE.Mesh(islandGeo, greenMat);
+  grass.position.set(x + side * 4, -1, z + 3); grass.scale.set(19, 5, 29); coast.add(grass);
+  for (let j = 0; j < 3; j++) {
+    const palm = new THREE.Group();
+    palm.position.set(x + Math.sin(j * 3 + i) * 11, 2.1, z + (j - 1) * 15);
+    palm.rotation.z = Math.sin(i + j) * .12;
+    const trunk = new THREE.Mesh(trunkGeo, trunkMat); trunk.position.y = 3; palm.add(trunk);
+    for (let k = 0; k < 5; k++) {
+      const leaf = new THREE.Mesh(leafGeo, leafMat); leaf.position.y = 6;
+      leaf.rotation.y = k * Math.PI * 2 / 5 + j; palm.add(leaf);
+    }
+    coast.add(palm);
+  }
+}
+// Sun and fine cloud bands sit in the sky dome and follow its position.
+const sunDisc = new THREE.Mesh(new THREE.SphereGeometry(13, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffe8b6, fog: false }));
+sunDisc.position.set(-230, 85, 390); sky.add(sunDisc);
+const cloudMat = new THREE.MeshBasicMaterial({ color: 0xf3e4c8, transparent: true, opacity: .32, fog: false, depthWrite: false });
+for (let i = 0; i < 9; i++) {
+  const cloud = new THREE.Mesh(islandGeo, cloudMat);
+  cloud.position.set(-340 + i * 86, 100 + Math.sin(i * 2) * 24, 360);
+  cloud.scale.set(50 + i % 3 * 12, 2.4, 12); sky.add(cloud);
+}
+// Reusable foam flecks form two animated trails behind the hulls.
+const wake = new THREE.Group(); scene.add(wake);
+const wakeGeo = new THREE.PlaneGeometry(1, 1);
+const wakeMat = new THREE.MeshBasicMaterial({ color: 0xd2e9dc, transparent: true, opacity: .42, depthWrite: false, side: THREE.DoubleSide });
+for (let i = 0; i < 48; i++) {
+  const fleck = new THREE.Mesh(wakeGeo, wakeMat);
+  fleck.rotation.x = -Math.PI / 2; wake.add(fleck);
+}
 
 /* =====================================================================
    BOAT
@@ -280,7 +397,7 @@ let sailPivot, sailMesh, sailBase = null, sailUV = null;
 
 (function buildBoat() {
   const hullMat = new THREE.MeshPhongMaterial({ color: 0x5c3418, shininess: 40 });
-  const trimMat = new THREE.MeshPhongMaterial({ color: 0xd94a2b, shininess: 20 });
+  const trimMat = new THREE.MeshPhongMaterial({ color: 0xd96a42, shininess: 20 });
   const woodMat = new THREE.MeshPhongMaterial({ color: 0xc9a165, shininess: 10 });
   for (const sx of [-2.2, 2.2]) {
     const hull = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 8), hullMat);
@@ -302,6 +419,18 @@ let sailPivot, sailMesh, sailBase = null, sailUV = null;
   const deck = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.22, 3.4), woodMat);
   deck.position.set(0, 0.5, 0);
   boatGroup.add(deck);
+  // Individual deck seams and rope lashings give the raft a crafted feel.
+  const seamMat = new THREE.MeshLambertMaterial({ color: 0x8b633c });
+  const ropeMat = new THREE.MeshLambertMaterial({ color: 0xe4cea0 });
+  for (let x = -2.5; x <= 2.5; x += .5) {
+    const seam = new THREE.Mesh(new THREE.BoxGeometry(.022, .012, 3.35), seamMat);
+    seam.position.set(x, .616, 0); boatGroup.add(seam);
+  }
+  for (const sx of [-2.2, 2.2]) for (const z of [-2.6, 2.6]) for (let r = 0; r < 3; r++) {
+    const rope = new THREE.Mesh(new THREE.TorusGeometry(.64, .035, 4, 12), ropeMat);
+    rope.rotation.x = Math.PI / 2; rope.scale.y = .72;
+    rope.position.set(sx, .08, z + r * .12); boatGroup.add(rope);
+  }
   for (const bz of [-2.6, 2.6]) {
     const beam = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.18, 0.4), woodMat);
     beam.position.set(0, 0.48, bz);
@@ -330,7 +459,16 @@ let sailPivot, sailMesh, sailBase = null, sailUV = null;
   sg.rotateY(Math.PI / 2);              // +x -> -z (aft)
   sg.computeVertexNormals();
   sailBase = pos.array.slice();
-  sailMesh = new THREE.Mesh(sg, new THREE.MeshPhongMaterial({ color: 0xfff1d6, emissive: 0x332211, side: THREE.DoubleSide, shininess: 5 }));
+  const sailCanvas = document.createElement('canvas'); sailCanvas.width = 256; sailCanvas.height = 512;
+  const cloth = sailCanvas.getContext('2d');
+  cloth.fillStyle = '#f4e3be'; cloth.fillRect(0, 0, 256, 512);
+  cloth.fillStyle = '#cc6744'; cloth.fillRect(0, 340, 256, 72); cloth.fillRect(0, 428, 256, 12);
+  cloth.strokeStyle = '#a88c5b55'; cloth.lineWidth = 2;
+  for (let y = 0; y < 512; y += 64) { cloth.beginPath(); cloth.moveTo(0,y); cloth.lineTo(256,y); cloth.stroke(); }
+  cloth.strokeStyle = '#bd623c'; cloth.lineWidth = 9;
+  cloth.beginPath(); cloth.arc(115, 235, 43, 0, Math.PI * 2); cloth.stroke();
+  const sailTexture = new THREE.CanvasTexture(sailCanvas);
+  sailMesh = new THREE.Mesh(sg, new THREE.MeshPhongMaterial({ map: sailTexture, color: 0xfff7e4, side: THREE.DoubleSide, shininess: 5 }));
   sailPivot = new THREE.Group();
   sailPivot.position.set(0, 1.2, 0.3);
   sailPivot.add(sailMesh);
@@ -342,7 +480,7 @@ let sailPivot, sailMesh, sailBase = null, sailUV = null;
   sailPivot.add(boom);
 
   // Crew: six rowers, three per hull. Cylinder body + sphere head, no CapsuleGeometry.
-  const shirtColors = [0xd23c2a, 0xf0c030, 0x2a8ad2, 0x39b54a, 0xe86fb0, 0xff8c1a];
+  const shirtColors = [0xe1b66e, 0xc65e3f, 0xf1ddac, 0xc65e3f, 0xf1ddac, 0xe1b66e];
   const skinMat = new THREE.MeshPhongMaterial({ color: 0x7a4a2a, shininess: 15 });
   const paddleMat = new THREE.MeshPhongMaterial({ color: 0x8b5a2b });
   let ci = 0;
@@ -872,6 +1010,17 @@ function updateVisuals(dt) {
   // Water follows the boat; the shader samples world coordinates so no seams.
   water.position.set(b.x, 0, b.z);
   waterMat.uniforms.uTime.value = t;
+  wake.visible = b.v > .5;
+  for (let i = 0; i < wake.children.length; i++) {
+    const fleck = wake.children[i];
+    const age = ((i >> 1) / 24 + t * .32) % 1;
+    const back = 4 + age * (8 + b.v * .65);
+    const lateral = (i % 2 ? 1 : -1) * (2.2 + age * 2.8) + Math.sin(i * 13) * .35;
+    const x = b.x - fx * back + rx * lateral, z = b.z - fz * back + rz * lateral;
+    fleck.position.set(x, waveHeight(x, z, t) + .07, z);
+    fleck.scale.set((.25 + age * 1.6) * (1 - age), (.8 + age * 3) * (1 - age), 1);
+    fleck.rotation.z = -b.heading;
+  }
 
   // Buoys and finish poles bob on the same waves.
   for (let i = 0; i < buoys.length; i++) {
@@ -897,6 +1046,12 @@ function updateVisuals(dt) {
   camState.look.lerp(_v, k);
   camera.position.copy(camState.pos);
   camera.lookAt(camState.look);
+  if (sim.state === 'MENU') {
+    // Three-quarter hero composition leaves room for the title on the left.
+    const orbit = Math.sin(t * .08) * 1.4;
+    camera.position.set(b.x + 15 + orbit, 10.5, b.z - 19);
+    camera.lookAt(b.x + 5.5, 2.8, b.z + 3.5);
+  }
   sky.position.copy(camera.position);
   waterMat.uniforms.uCamPos.value.copy(camera.position);
 }
